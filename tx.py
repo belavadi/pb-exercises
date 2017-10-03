@@ -28,15 +28,22 @@ class Tx:
         '''Takes a byte stream and parses the transaction at the start
         return a Tx object
         '''
-        # s.read(n) will return n bytes
-        # s.read(1)[0] will return the next byte as an integer
-
         # version has 4 bytes, little-endian, interpret as int
+        version = little_endian_to_int(s.read(4))
         # num_inputs is 1 byte (not really, but we can learn about varint later)
+        num_inputs = s.read(1)[0]
+        tx_ins = []
         # each input needs parsing
+        for _ in range(num_inputs):
+            tx_ins.append(TxIn.parse(s))
         # num_outputs is 1 byte (again, varint, but we'll learn that later)
+        num_outputs = s.read(1)[0]
+        tx_outs = []
+        for _ in range(num_outputs):
+            tx_outs.append(TxOut.parse(s))
         # locktime is 4 bytes, little-endian
-        raise NotImplementedError
+        locktime = little_endian_to_int(s.read(4))
+        return cls(version, tx_ins, tx_outs, locktime)
 
 
 class TxIn:
@@ -52,14 +59,16 @@ class TxIn:
         '''Takes a byte stream and parses the tx_input at the start
         return a TxIn object
         '''
-        # s.read(n) will return n bytes
-        # s.read(1)[0] will return the next byte as an integer
-
         # prev_tx is 32 bytes, little endian
+        prev_tx = s.read(32)[::-1]
         # prev_index is 4 bytes, little endian, interpret as int
+        prev_index = little_endian_to_int(s.read(4))
         # script_sig is a variable field (length followed by the data)
+        script_sig_length = s.read(1)[0]
+        script_sig = s.read(script_sig_length)
         # sequence is 4 bytes, little-endian, interpret as int
-        raise NotImplementedError
+        sequence = little_endian_to_int(s.read(4))
+        return cls(prev_tx, prev_index, script_sig, sequence)
 
 
 class TxOut:
@@ -73,12 +82,12 @@ class TxOut:
         '''Takes a byte stream and parses the tx_output at the start
         return a TxOut object
         '''
-        # s.read(n) will return n bytes
-        # s.read(1)[0] will return the next byte as an integer
-
         # amount is 8 bytes, little endian, interpret as int
+        amount = little_endian_to_int(s.read(8))
         # script_pubkey is a variable field (length followed by the data)
-        raise NotImplementedError
+        script_pubkey_length = s.read(1)[0]
+        script_pubkey = s.read(script_pubkey_length)
+        return cls(amount, script_pubkey)
 
     
 class TxTest(TestCase):
