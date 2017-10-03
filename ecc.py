@@ -162,18 +162,13 @@ class Point:
 
     def __rmul__(self, coefficient):
         # rmul calculates coefficient * self
-        # implement the naive way:
+        # naive way - see below for binary expansion method
         # start from 0 (point at infinity)
-        # use: for i in range(coefficient):
-        # keep adding self over and over
-        # Extra Credit:
-        # a more advanced technique uses point doubling
-        # find the binary representation of coefficient
-        # keep doubling the point and if the bit is there for coefficient
-        # add the current.
-        # remember to return an instance of the class
-        # use: self.__class__(x, y, a, b)
-        raise NotImplementedError
+        result = self.__class__(x=None, y=None, a=self.a, b=self.b)
+        for i in range(coefficient):
+            # keep adding self over and over
+            result += self
+        return result
 
 
 class PointTest(TestCase):
@@ -209,65 +204,117 @@ class ECCTest(TestCase):
     def test_on_curve(self):
         # tests the following points whether they are on the curve or not
         # on curve y^2=x^3-7 over F_223:
-        # (192,105) (17,56) (200,119) (1,193) (42,99)
+        # (200,119) (42,99) - not on curve
+        # (192,105) (17,56) (1,193) - on curve
         # the ones that aren't should raise a RuntimeError
         prime = 223
         a = FieldElement(0, prime)
         b = FieldElement(7, prime)
-
-        # Initialize points this way:
-        # x = FieldElement(192, prime)
-        # y = FieldElement(105, prime)
-        # p1 = Point(x, y, a, b)
-
-        # iterate over all the point pairs above
-        # create point object
-        # assert that some raise an error using
-        # with self.assertRaises(RuntimeError):
-        #     Point(x, y, a, b)
-        # assert that others don't just by making sure they run normal
-        raise NotImplementedError
+        with self.assertRaises(RuntimeError):
+            x = FieldElement(num=200, prime=prime)
+            y = FieldElement(num=119, prime=prime)
+            Point(x=x, y=y, a=a, b=b)
+        with self.assertRaises(RuntimeError):
+            x = FieldElement(num=42, prime=prime)
+            y = FieldElement(num=99, prime=prime)
+            Point(x=x, y=y, a=a, b=b)
+        # these should go through fine
+        x = FieldElement(num=192, prime=prime)
+        y = FieldElement(num=105, prime=prime)
+        Point(x=x, y=y, a=a, b=b)
+        x = FieldElement(num=17, prime=prime)
+        y = FieldElement(num=56, prime=prime)
+        Point(x=x, y=y, a=a, b=b)
+        x = FieldElement(num=1, prime=prime)
+        y = FieldElement(num=193, prime=prime)
+        Point(x=x, y=y, a=a, b=b)
 
     def test_add1(self):
         # tests the following additions on curve y^2=x^3-7 over F_223:
-        # (192,105) + (17,56)
-        # (47,71) + (117,141)
-        # (143,98) + (76,66)
+        # (192,105) + (17,56) = (170, 142)
+        # (47,71) + (117,141) = (60, 139)
+        # (143,98) + (76,66) = (47, 71)
         prime = 223
         a = FieldElement(0, prime)
         b = FieldElement(7, prime)
-
-        # Initialize points this way:
-        # x = FieldElement(192, prime)
-        # y = FieldElement(105, prime)
-        # p1 = Point(x, y, a, b)
-
-        # Make sure you find the answers first
-        # iterate over triplets: (point1, point2, point_sum)
-        # test that: point1 + point2 == point_sum
-        raise NotImplementedError
+        x = FieldElement(num=192, prime=prime)
+        y = FieldElement(num=105, prime=prime)
+        p1 = Point(x=x, y=y, a=a, b=b)
+        x = FieldElement(num=17, prime=prime)
+        y = FieldElement(num=56, prime=prime)
+        p2 = Point(x=x, y=y, a=a, b=b)
+        x = FieldElement(num=170, prime=prime)
+        y = FieldElement(num=142, prime=prime)
+        p3 = Point(x=x, y=y, a=a, b=b)
+        self.assertEqual(p1+p2, p3)
+        x = FieldElement(num=47, prime=prime)
+        y = FieldElement(num=71, prime=prime)
+        p1 = Point(x=x, y=y, a=a, b=b)
+        x = FieldElement(num=117, prime=prime)
+        y = FieldElement(num=141, prime=prime)
+        p2 = Point(x=x, y=y, a=a, b=b)
+        x = FieldElement(num=60, prime=prime)
+        y = FieldElement(num=139, prime=prime)
+        p3 = Point(x=x, y=y, a=a, b=b)
+        self.assertEqual(p1+p2, p3)
+        x = FieldElement(num=143, prime=prime)
+        y = FieldElement(num=98, prime=prime)
+        p1 = Point(x=x, y=y, a=a, b=b)
+        x = FieldElement(num=76, prime=prime)
+        y = FieldElement(num=66, prime=prime)
+        p2 = Point(x=x, y=y, a=a, b=b)
+        x = FieldElement(num=47, prime=prime)
+        y = FieldElement(num=71, prime=prime)
+        p3 = Point(x=x, y=y, a=a, b=b)
+        self.assertEqual(p1+p2, p3)
 
     def test_rmul(self):
         # tests the following scalar multiplications
-        # 2*(192,105)
-        # 2*(143,98)
-        # 2*(47,71)
-        # 4*(47,71)
-        # 8*(47,71)
-        # 21*(47,71)
+        # 2*(192,105) = (49, 71)
+        # 2*(143,98) = (64, 168)
+        # 2*(47,71) = (36, 111)
+        # 4*(47,71) = (194, 51)
+        # 8*(47,71) = (116, 55)
+        # 21*(47,71) = (None, None)
         prime = 223
         a = FieldElement(0, prime)
         b = FieldElement(7, prime)
-
-        # Initialize points this way:
-        # x = FieldElement(192, prime)
-        # y = FieldElement(105, prime)
-        # p1 = Point(x, y, a, b)
-
-        # Make sure you find the answers first
-        # iterate over triplets: (coefficient, point, result)
-        # test that: coefficient * point == result
-        raise NotImplementedError
+        x = FieldElement(num=192, prime=prime)
+        y = FieldElement(num=105, prime=prime)
+        p1 = Point(x=x, y=y, a=a, b=b)
+        x = FieldElement(num=49, prime=prime)
+        y = FieldElement(num=71, prime=prime)
+        p2 = Point(x=x, y=y, a=a, b=b)
+        self.assertEqual(2*p1, p2)
+        x = FieldElement(num=143, prime=prime)
+        y = FieldElement(num=98, prime=prime)
+        p1 = Point(x=x, y=y, a=a, b=b)
+        x = FieldElement(num=64, prime=prime)
+        y = FieldElement(num=168, prime=prime)
+        p2 = Point(x=x, y=y, a=a, b=b)
+        self.assertEqual(2*p1, p2)
+        x = FieldElement(num=47, prime=prime)
+        y = FieldElement(num=71, prime=prime)
+        p1 = Point(x=x, y=y, a=a, b=b)
+        x = FieldElement(num=36, prime=prime)
+        y = FieldElement(num=111, prime=prime)
+        p2 = Point(x=x, y=y, a=a, b=b)
+        self.assertEqual(2*p1, p2)
+        x = FieldElement(num=194, prime=prime)
+        y = FieldElement(num=51, prime=prime)
+        p2 = Point(x=x, y=y, a=a, b=b)
+        self.assertEqual(4*p1, p2)
+        x = FieldElement(num=116, prime=prime)
+        y = FieldElement(num=55, prime=prime)
+        p2 = Point(x=x, y=y, a=a, b=b)
+        self.assertEqual(8*p1, p2)
+        p2 = Point(x=None, y=None, a=a, b=b)
+        self.assertEqual(21*p1, p2)
+        x = FieldElement(num=15, prime=prime)
+        y = FieldElement(num=86, prime=prime)
+        p1 = Point(x=x, y=y, a=a, b=b)
+        p2 = Point(x=None, y=None, a=a, b=b)
+        self.assertEqual(7*p1, p2)
 
 
 A = 0
@@ -323,29 +370,39 @@ class S256Point(Point):
 
     def sec(self, compressed=True):
         # returns the binary version of the sec format, NOT hex
-        # if compressed, starts with b'\x02' if self.y is even, b'\x03' if self.y is odd
-        # then self.x
-        # if non-compressed, starts with b'\x04' followod by self.x and then self.y
-        # remember, you have to convert self.x/self.y to binary (some_integer.to_bytes(32, 'big'))
-        raise NotImplementedError
+        # if compressed, starts with b'\x02' if self.y is even,
+        # b'\x03' if self.y is odd, then self.x
+        if compressed:
+            if self.y.num % 2 == 1:
+                prefix = '03'
+            else:
+                prefix = '02'
+            return unhexlify('{}{}'.format(prefix, self.x.hex()))
+        # if non-compressed, starts with b'\x04' followod by self.x
+        # and then self.y
+        else:
+            return unhexlify('04{}{}'.format(self.x.hex(), self.y.hex()))
 
     def address(self, compressed=True, testnet=False):
         '''Returns the address string'''
-        # get the sec
-        # hash160 the sec
+        # get the sec / hash160 the sec
+        h160 = hash160(self.sec(compressed=compressed))
         # raw is hash 160 prepended w/ b'\x00' for mainnet, b'\x6f' for testnet
+        if testnet:
+            prefix = b'\x6f'
+        else:
+            prefix = b'\x00'
+        raw = prefix + h160
         # checksum is first 4 bytes of double_sha256 of raw
+        checksum = double_sha256(raw)[:4]
         # encode_base58 the raw + checksum
-        # return as a string, you can use .decode('ascii') to do this.
-        raise NotImplementedError
+        return encode_base58(raw+checksum).decode('ascii')
 
     def verify(self, z, sig):
-        # remember sig.r and sig.s are the main things we're checking
-        # remember 1/s = pow(s, N-2, N) % N
-        # u = z / s
-        # v = r / s
-        # u*G + v*P should have as the x coordinate, r
-        raise NotImplementedError
+        s_inv = pow(sig.s, N-2, N)
+        u = z * s_inv % N
+        v = sig.r * s_inv % N
+        return (u*G + v*self).x.num == sig.r
 
 
 G = S256Point(
@@ -361,8 +418,27 @@ class S256Test(TestCase):
 
     def test_pubpoint(self):
         # write a test that tests the public point for the following
-        # coefficients: 7, 1485, 2**128, 2**240+2**31
-        raise NotImplementedError
+        # coefficients: 7G, 1485G, 2**128G, (2**240+2**31)G
+        point = 7*G
+        expected = (
+            0x5cbdf0646e5db4eaa398f365f2ea7a0e3d419b7e0330e39ce92bddedcac4f9bc,
+            0x6aebca40ba255960a3178d6d861a54dba813d0b813fde7b5a5082628087264da)
+        self.assertEqual((point.x.num, point.y.num), expected)
+        point = 1485*G
+        expected = (
+            0xc982196a7466fbbbb0e27a940b6af926c1a74d5ad07128c82824a11b5398afda,
+            0x7a91f9eae64438afb9ce6448a1c133db2d8fb9254e4546b6f001637d50901f55)
+        self.assertEqual((point.x.num, point.y.num), expected)
+        point = 2**128*G
+        expected = (
+            0x8f68b9d2f63b5f339239c1ad981f162ee88c5678723ea3351b7b444c9ec4c0da,
+            0x662a9f2dba063986de1d90c2b6be215dbbea2cfe95510bfdf23cbf79501fff82)
+        self.assertEqual((point.x.num, point.y.num), expected)
+        point = (2**240+2**31)*G
+        expected = (
+            0x9577ff57c8234558f293df502ca4f09cbc65a6572c842b39b366f21717945116,
+            0x10b49c67fa9365ad7b90dab070be339a1daf9052373ec30ffae4f72d5e66d053)
+        self.assertEqual((point.x.num, point.y.num), expected)
 
     def test_sec(self):
         coefficient = 999**3
@@ -410,6 +486,7 @@ class S256Test(TestCase):
         self.assertEqual(
             point.address(compressed=False, testnet=True), testnet_address)
 
+
     def test_verify(self):
         point = S256Point(
             0x887387e452b8eacc4acfde10d9aaf7f6d9a0f975aabb10d006e4da568744d06c,
@@ -422,7 +499,6 @@ class S256Test(TestCase):
         r = 0xeff69ef2b1bd93a66ed5219add4fb51e11a840f404876325a1e8ffe0529a2c
         s = 0xc7207fee197d27c618aea621406f6bf5ef6fca38681d82b2f06fddbdce6feab6
         self.assertTrue(point.verify(z, Signature(r, s)))
-
 
 
 class Signature:
@@ -497,13 +573,12 @@ class PrivateKey:
         return '{:x}'.format(self.secret).zfill(64)
 
     def sign(self, z):
-        # we need a random number k: randint(0, 2**256)
-        # r is the x coordinate of the resulting point k*G
-        # remember 1/k = pow(k, N-2, N) % N
-        # s = (z+r*secret) / k
-        # return an instance of Signature:
-        # Signature(r, s)
-        raise NotImplementedError
+        k = randint(0, 2**256)
+        r = (k*G).x.num
+        s = (z + r*self.secret) * pow(k, N-2, N) % N
+        if s*2 > N:
+            s = N - s
+        return Signature(r, s)
 
 
 class PrivateKeyTest(TestCase):
