@@ -4,6 +4,12 @@ from unittest import TestCase, TestSuite, TextTestRunner
 import hashlib
 
 
+SIGHASH_ALL = 1
+SIGHASH_NONE = 2
+SIGHASH_SINGLE = 3
+BASE58_ALPHABET = b'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+
+
 def run_test(test):
     suite = TestSuite()
     suite.addTest(test)
@@ -18,9 +24,6 @@ def bytes_to_str(b, encoding='ascii'):
 def str_to_bytes(s, encoding='ascii'):
     '''Returns a bytes version of the string'''
     return s.encode(encoding)
-
-
-BASE58_ALPHABET = b'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 
 def hash160(s):
