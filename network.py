@@ -11,7 +11,6 @@ from helper import (
 
 NETWORK_MAGIC = b'\xf9\xbe\xb4\xd9'
 
-
 class NetworkEnvelope:
 
     def __init__(self, command, payload):
@@ -28,20 +27,29 @@ class NetworkEnvelope:
     def parse(cls, s):
         '''Takes a stream and creates a NetworkEnvelope'''
         # check the network magic b'\xf9\xbe\xb4\xd9'
+        magic = s.read(4)
+        if magic != NETWORK_MAGIC:
+            raise RuntimeError('Network Magic not at beginning of stream')
         # command 12 bytes
+        command = s.read(12)
         # payload length 4 bytes, little endian
-        # checksum 4 bytes, first four of double-sha256 of payload
+        payload_length = little_endian_to_int(s.read(4))
+        # checksum 4 bytes
+        checksum = s.read(4)
         # payload
-        raise NotImplementedError
+        payload = s.read(payload_length)
+        # check the checksum
+        if double_sha256(payload)[:4] != checksum:
+            raise RuntimeError('Payload and Checksum do not match')
+        return cls(command, payload)
 
     def serialize(self):
         '''Returns the byte serialization of the entire network message'''
-        # add the network magic b'\xf9\xbe\xb4\xd9'
-        # command 12 bytes
-        # payload length 4 bytes, little endian
-        # checksum 4 bytes, first four of double-sha256 of payload
-        # payload
-        raise NotImplementedError
+        result = NETWORK_MAGIC + self.command
+        payload_length = int_to_little_endian(len(self.payload), 4)
+        checksum = double_sha256(self.payload)[:4]
+        result += payload_length + checksum + self.payload
+        return result
 
 
 class NetworkEnvelopeTest(TestCase):
@@ -67,3 +75,4 @@ class NetworkEnvelopeTest(TestCase):
         stream = BytesIO(msg)
         envelope = NetworkEnvelope.parse(stream)
         self.assertEqual(envelope.serialize(), msg)
+

@@ -111,41 +111,50 @@ def h160_to_p2sh_address(h160, testnet=False):
 
 def merkle_parent(hash1, hash2):
     '''Takes the binary hashes and calculates the double-sha256'''
-    raise NotImplementedError
+    return double_sha256(hash1 + hash2)
 
 
 def merkle_parent_level(hash_list):
     '''Takes a list of binary hashes and returns a list that's half
     the length'''
     # if the list has exactly 1 element raise an error
+    if len(hash_list) == 1:
+        raise RuntimeError('Cannot take a merkle parent with 1 item')
     # if the list has an odd number of elements, duplicate the last one
-    #  and put it at the end so it has an even number of elements
+    if len(hash_list) % 2 == 1:
+        hash_list.append(hash_list[-1])
     # initialize next level
+    parent_level = []
     # loop over every pair (use: for i in range(0, len(hash_list), 2))
-    #   get the merkle parent of i and i+1 hashes
-    #   append to next level
+    for i in range(0, len(hash_list), 2):
+        parent_level.append(merkle_parent(hash_list[i], hash_list[i+1]))
     # return next level
-    raise NotImplementedError
+    return parent_level
 
 
 def merkle_root(hash_list):
     '''Takes a list of binary hashes and returns the merkle root
     '''
     # if the list has exactly 1 element, return that element
+    if len(hash_list) == 1:
+        return hash_list[0]
     # calculate the merkle parent level
-    # find the merkle root of the merkle parent level
-    raise NotImplementedError
+    current_level = hash_list
+    while len(current_level) > 1:
+        current_level = merkle_parent_level(current_level)
+    return current_level[0]
 
 
 def merkle_path(index, total):
     '''Returns a list of indexes up the merkle tree of the node at index if
     there are a total number of nodes'''
     # initialize the return list
+    path = []
     # loop through math.ceil(math.log(total, 2)) times
-    #   add the index to return list
-    #   index becomes integer divide by 2 (use: index = index // 2)
-    # return the list
-    raise NotImplementedError
+    for i in range(math.ceil(math.log(total, 2))):
+        path.append(index)
+        index //= 2
+    return path
 
 
 class HelperTest(TestCase):
