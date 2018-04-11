@@ -1,8 +1,11 @@
-from binascii import hexlify, unhexlify
 from io import BytesIO
 from unittest import TestCase
 
-from helper import little_endian_to_int
+from helper import (
+    little_endian_to_int,
+    read_varint,
+)
+from script import Script
 
 class Tx:
 
@@ -15,12 +18,15 @@ class Tx:
     def __repr__(self):
         tx_ins = ''
         for tx_in in self.tx_ins:
-            tx_ins += tx_in.__repr__()
+            tx_ins += tx_in.__repr__() + '\n'
         tx_outs = ''
         for tx_out in self.tx_outs:
-            tx_outs += tx_out.__repr__()
+            tx_outs += tx_out.__repr__() + '\n'
         return 'version: {}\ntx_ins:\n{}\ntx_outs:\n{}\nlocktime: {}\n'.format(
-            self.version, tx_ins, tx_outs, self.locktime,
+            self.version,
+            tx_ins,
+            tx_outs,
+            self.locktime,
         )
 
     @classmethod
@@ -29,23 +35,28 @@ class Tx:
         return a Tx object
         '''
         # s.read(n) will return n bytes
-        # s.read(1)[0] will return the next byte as an integer
-
         # version has 4 bytes, little-endian, interpret as int
-        # num_inputs is 1 byte (not really, but we can learn about varint later)
+        # num_inputs is a varint, use read_varint(s)
         # each input needs parsing
-        # num_outputs is 1 byte (again, varint, but we'll learn that later)
+        # num_outputs is a varint, use read_varint(s)
+        # each output needs parsing
         # locktime is 4 bytes, little-endian
+        # return an instance of the class (cls(...))
         raise NotImplementedError
 
 
 class TxIn:
-
     def __init__(self, prev_tx, prev_index, script_sig, sequence):
         self.prev_tx = prev_tx
         self.prev_index = prev_index
-        self.script_sig = script_sig
+        self.script_sig = Script.parse(script_sig)
         self.sequence = sequence
+
+    def __repr__(self):
+        return '{}:{}'.format(
+            self.prev_tx.hex(),
+            self.prev_index,
+        )
 
     @classmethod
     def parse(cls, s):
@@ -53,20 +64,22 @@ class TxIn:
         return a TxIn object
         '''
         # s.read(n) will return n bytes
-        # s.read(1)[0] will return the next byte as an integer
-
         # prev_tx is 32 bytes, little endian
         # prev_index is 4 bytes, little endian, interpret as int
         # script_sig is a variable field (length followed by the data)
+        # get the length by using read_varint(s)
         # sequence is 4 bytes, little-endian, interpret as int
+        # return an instance of the class (cls(...))
         raise NotImplementedError
-
 
 class TxOut:
 
     def __init__(self, amount, script_pubkey):
         self.amount = amount
-        self.script_pubkey = script_pubkey
+        self.script_pubkey = Script.parse(script_pubkey)
+
+    def __repr__(self):
+        return '{}:{}'.format(self.amount, self.script_pubkey)
 
     @classmethod
     def parse(cls, s):
@@ -74,49 +87,49 @@ class TxOut:
         return a TxOut object
         '''
         # s.read(n) will return n bytes
-        # s.read(1)[0] will return the next byte as an integer
-
         # amount is 8 bytes, little endian, interpret as int
         # script_pubkey is a variable field (length followed by the data)
+        # get the length by using read_varint(s)
+        # return an instance of the class (cls(...))
         raise NotImplementedError
 
-    
+
 class TxTest(TestCase):
 
     def test_parse_version(self):
-        raw_tx = unhexlify('0100000001813f79011acb80925dfe69b3def355fe914bd1d96a3f5f71bf8303c6a989c7d1000000006b483045022100ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f02207a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed01210349fc4e631e3624a545de3f89f5d8684c7b8138bd94bdd531d2e213bf016b278afeffffff02a135ef01000000001976a914bc3b654dca7e56b04dca18f2566cdaf02e8d9ada88ac99c39800000000001976a9141c4bc762dd5423e332166702cb75f40df79fea1288ac19430600')
+        raw_tx = bytes.fromhex('0100000001813f79011acb80925dfe69b3def355fe914bd1d96a3f5f71bf8303c6a989c7d1000000006b483045022100ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f02207a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed01210349fc4e631e3624a545de3f89f5d8684c7b8138bd94bdd531d2e213bf016b278afeffffff02a135ef01000000001976a914bc3b654dca7e56b04dca18f2566cdaf02e8d9ada88ac99c39800000000001976a9141c4bc762dd5423e332166702cb75f40df79fea1288ac19430600')
         stream = BytesIO(raw_tx)
         tx = Tx.parse(stream)
         self.assertEqual(tx.version, 1)
 
     def test_parse_inputs(self):
-        raw_tx = unhexlify('0100000001813f79011acb80925dfe69b3def355fe914bd1d96a3f5f71bf8303c6a989c7d1000000006b483045022100ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f02207a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed01210349fc4e631e3624a545de3f89f5d8684c7b8138bd94bdd531d2e213bf016b278afeffffff02a135ef01000000001976a914bc3b654dca7e56b04dca18f2566cdaf02e8d9ada88ac99c39800000000001976a9141c4bc762dd5423e332166702cb75f40df79fea1288ac19430600')
+        raw_tx = bytes.fromhex('0100000001813f79011acb80925dfe69b3def355fe914bd1d96a3f5f71bf8303c6a989c7d1000000006b483045022100ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f02207a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed01210349fc4e631e3624a545de3f89f5d8684c7b8138bd94bdd531d2e213bf016b278afeffffff02a135ef01000000001976a914bc3b654dca7e56b04dca18f2566cdaf02e8d9ada88ac99c39800000000001976a9141c4bc762dd5423e332166702cb75f40df79fea1288ac19430600')
         stream = BytesIO(raw_tx)
         tx = Tx.parse(stream)
         self.assertEqual(len(tx.tx_ins), 1)
-        want = unhexlify('d1c789a9c60383bf715f3f6ad9d14b91fe55f3deb369fe5d9280cb1a01793f81')
+        want = bytes.fromhex('d1c789a9c60383bf715f3f6ad9d14b91fe55f3deb369fe5d9280cb1a01793f81')
         self.assertEqual(tx.tx_ins[0].prev_tx, want)
         self.assertEqual(tx.tx_ins[0].prev_index, 0)
-        want = unhexlify('483045022100ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f02207a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed01210349fc4e631e3624a545de3f89f5d8684c7b8138bd94bdd531d2e213bf016b278a')
-        self.assertEqual(tx.tx_ins[0].script_sig, want)
+        want = bytes.fromhex('483045022100ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f02207a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed01210349fc4e631e3624a545de3f89f5d8684c7b8138bd94bdd531d2e213bf016b278a')
+        self.assertEqual(tx.tx_ins[0].script_sig.serialize(), want)
         self.assertEqual(tx.tx_ins[0].sequence, 0xfffffffe)
 
     def test_parse_outputs(self):
-        raw_tx = unhexlify('0100000001813f79011acb80925dfe69b3def355fe914bd1d96a3f5f71bf8303c6a989c7d1000000006b483045022100ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f02207a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed01210349fc4e631e3624a545de3f89f5d8684c7b8138bd94bdd531d2e213bf016b278afeffffff02a135ef01000000001976a914bc3b654dca7e56b04dca18f2566cdaf02e8d9ada88ac99c39800000000001976a9141c4bc762dd5423e332166702cb75f40df79fea1288ac19430600')
+        raw_tx = bytes.fromhex('0100000001813f79011acb80925dfe69b3def355fe914bd1d96a3f5f71bf8303c6a989c7d1000000006b483045022100ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f02207a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed01210349fc4e631e3624a545de3f89f5d8684c7b8138bd94bdd531d2e213bf016b278afeffffff02a135ef01000000001976a914bc3b654dca7e56b04dca18f2566cdaf02e8d9ada88ac99c39800000000001976a9141c4bc762dd5423e332166702cb75f40df79fea1288ac19430600')
         stream = BytesIO(raw_tx)
         tx = Tx.parse(stream)
         self.assertEqual(len(tx.tx_outs), 2)
         want = 32454049
         self.assertEqual(tx.tx_outs[0].amount, want)
-        want = unhexlify('76a914bc3b654dca7e56b04dca18f2566cdaf02e8d9ada88ac')
-        self.assertEqual(tx.tx_outs[0].script_pubkey, want)
+        want = bytes.fromhex('76a914bc3b654dca7e56b04dca18f2566cdaf02e8d9ada88ac')
+        self.assertEqual(tx.tx_outs[0].script_pubkey.serialize(), want)
         want = 10011545
         self.assertEqual(tx.tx_outs[1].amount, want)
-        want = unhexlify('76a9141c4bc762dd5423e332166702cb75f40df79fea1288ac')
-        self.assertEqual(tx.tx_outs[1].script_pubkey, want)
+        want = bytes.fromhex('76a9141c4bc762dd5423e332166702cb75f40df79fea1288ac')
+        self.assertEqual(tx.tx_outs[1].script_pubkey.serialize(), want)
 
     def test_parse_locktime(self):
-        raw_tx = unhexlify('0100000001813f79011acb80925dfe69b3def355fe914bd1d96a3f5f71bf8303c6a989c7d1000000006b483045022100ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f02207a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed01210349fc4e631e3624a545de3f89f5d8684c7b8138bd94bdd531d2e213bf016b278afeffffff02a135ef01000000001976a914bc3b654dca7e56b04dca18f2566cdaf02e8d9ada88ac99c39800000000001976a9141c4bc762dd5423e332166702cb75f40df79fea1288ac19430600')
+        raw_tx = bytes.fromhex('0100000001813f79011acb80925dfe69b3def355fe914bd1d96a3f5f71bf8303c6a989c7d1000000006b483045022100ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f02207a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed01210349fc4e631e3624a545de3f89f5d8684c7b8138bd94bdd531d2e213bf016b278afeffffff02a135ef01000000001976a914bc3b654dca7e56b04dca18f2566cdaf02e8d9ada88ac99c39800000000001976a9141c4bc762dd5423e332166702cb75f40df79fea1288ac19430600')
         stream = BytesIO(raw_tx)
         tx = Tx.parse(stream)
         self.assertEqual(tx.locktime, 410393)
